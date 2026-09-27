@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from xrpl.models import Payment
-from xrpl.transaction import submit_and_wait
+from xrpl.transaction import submit_and_wait, autofill_and_sign
 from xrpl.wallet import Wallet
 from xrpl.clients import JsonRpcClient
 from xrpl.models.requests import ServerInfo
@@ -81,11 +81,16 @@ class XRPLAdapter:
             amount=str(amount_drops),
         )
 
-        print("Payment XRPL construido")
-        print(f"Cantidad: {amount} {asset}")
-        print(f"Destino: {destination}")
+        signed = autofill_and_sign(
+            payment,
+            self.client,
+            self.wallet,
+        )
 
-        return payment
+        print("Payment XRPL firmado localmente")
+
+        return signed
+
 
 if __name__ == "__main__":
     adapter = XRPLAdapter()

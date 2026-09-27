@@ -5,6 +5,8 @@ class PaymentEngine:
     def __init__(self, adapter):
         self.adapter = adapter
 
+        print("Rielx Payment Engine iniciado")
+
     def get_balance(self, address):
         return self.adapter.get_balance(address)
 
@@ -14,8 +16,6 @@ class PaymentEngine:
             asset=asset,
             destination=destination,
         )
-
-        print("Rielx Payment Engine iniciado")
 
 
 if __name__ == "__main__":
