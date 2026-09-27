@@ -1,4 +1,4 @@
-from xrpl_adapter import XRPLAdapter
+from payment_adapter import PaymentAdapter
 from xrpl.core.addresscodec import is_valid_classic_address
 
 
