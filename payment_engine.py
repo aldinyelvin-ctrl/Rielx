@@ -18,14 +18,4 @@ class PaymentEngine:
 
         self.adapter.validate_destination(request.destination)
 
-        result = self.adapter.pay(request)
-
-        return PaymentResult(
-            success=result.success,
-            amount=result.amount,
-            asset=result.asset,
-            destination=result.destination,
-            tx_hash=result.tx_hash,
-            ledger_index=result.ledger_index,
-            delivered_amount=result.delivered_amount,
-        )
+        return self.adapter.pay(request)
