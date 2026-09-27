@@ -1,5 +1,10 @@
 from payment_adapter import PaymentAdapter
-from payment_models import PaymentRequest, PaymentResult
+from payment_models import (
+    BalanceRequest,
+    BalanceResult,
+    PaymentRequest,
+    PaymentResult,
+)
 
 class PaymentEngine:
     def __init__(self, adapter: PaymentAdapter):
@@ -7,8 +12,14 @@ class PaymentEngine:
 
         print("Rielx Payment Engine iniciado")
 
-    def get_balance(self, address, asset):
-        return self.adapter.get_balance(address, asset)
+    def get_balance(self, request: BalanceRequest) -> BalanceResult:
+        return BalanceResult(
+            amount=self.adapter.get_balance(
+                request.address,
+                request.asset,
+            ),
+            asset=request.asset,
+    )
 
     def pay(self, request: PaymentRequest) -> PaymentResult:
         if request.amount <= 0:
