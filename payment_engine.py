@@ -19,5 +19,24 @@ class PaymentEngine:
 
 
 if __name__ == "__main__":
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
     xrpl_adapter = XRPLAdapter()
     engine = PaymentEngine(xrpl_adapter)
+
+    agent_b_address = os.getenv("AGENT_B_ADDRESS")
+
+    if not agent_b_address:
+        raise RuntimeError("AGENT_B_ADDRESS no configurada")
+
+    result = engine.pay(
+        amount=0.001,
+        asset="XRP",
+        destination=agent_b_address,
+    )
+
+    print("Pago completado")
+    print(f"Resultado: {result}")

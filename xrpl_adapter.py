@@ -89,7 +89,19 @@ class XRPLAdapter:
 
         print("Payment XRPL firmado localmente")
 
-        return signed
+        result = submit_and_wait(
+            signed,
+            self.client,
+        )
+
+        print("Transaccion enviada y confirmada")
+
+        return {
+            "success": result.is_successful(),
+            "tx_hash": result.result["hash"],
+            "ledger_index": result.result["ledger_index"],
+            "delivered_amount": result.result["meta"]["delivered_amount"],
+        }
 
 
 if __name__ == "__main__":
