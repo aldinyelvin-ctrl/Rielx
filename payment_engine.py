@@ -1,18 +1,16 @@
+from xrpl_adapter import XRPLAdapter
+
+
 class PaymentEngine:
-    def __init__(self):
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    def get_balance(self, address):
+        return self.adapter.get_balance(address)
+
         print("Rielx Payment Engine iniciado")
 
-    def pay(self, amount, asset, destination):
-        print("Pago solicitado")
-        print(f"Cantidad: {amount}")
-        print(f"Asset: {asset}")
-        print(f"Destino: {destination}")
 
 if __name__ == "__main__":
-    engine = PaymentEngine()
-
-    engine.pay(
-        amount=0.001,
-        asset="XRP",
-        destination="rTEST_DESTINATION",
-    )
+    xrpl_adapter = XRPLAdapter()
+    engine = PaymentEngine(xrpl_adapter)
