@@ -21,8 +21,18 @@ class PaymentEngine:
         if not is_valid_classic_address(destination):
             raise ValueError("Destination no es una dirección XRPL válida")
 
-        return self.adapter.pay(
+        result = self.adapter.pay(
             amount=amount,
             asset=asset,
             destination=destination,
         )
+
+        return {
+            "success": result["success"],
+            "amount": amount,
+            "asset": asset,
+            "destination": destination,
+            "tx_hash": result["tx_hash"],
+            "ledger_index": result["ledger_index"],
+            "delivered_amount": result["delivered_amount"],
+        }
