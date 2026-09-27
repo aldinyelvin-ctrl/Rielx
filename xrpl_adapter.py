@@ -63,7 +63,9 @@ class XRPLAdapter(PaymentAdapter):
                 "Destination no es una dirección XRPL válida"
             )
 
-    def get_balance(self, address):
+    def get_balance(self, address, asset):
+        self.validate_asset(asset)
+
         request = AccountInfo(
             account=address,
             ledger_index="validated",
