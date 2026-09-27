@@ -1,7 +1,9 @@
 import os
+from decimal import Decimal
 
 from dotenv import load_dotenv
 from payment_adapter import PaymentAdapter
+from payment_models import PaymentResult
 from xrpl.models import Payment
 from xrpl.transaction import submit_and_wait, autofill_and_sign
 from xrpl.wallet import Wallet
