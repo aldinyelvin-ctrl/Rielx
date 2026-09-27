@@ -1,5 +1,6 @@
 from xrpl.clients import JsonRpcClient
 from xrpl.models.requests import ServerInfo
+from xrpl.models.requests import AccountInfo
 
 
 class XRPLAdapter:
@@ -20,6 +21,25 @@ class XRPLAdapter:
         print("Error de conexion XRPL")
         print(response.result)
         return False
+
+    def get_balance(self, address):
+        request = AccountInfo(
+            account=address,
+            ledger_index="validated",
+        )
+
+        response = self.client.request(request)
+
+        if not response.is_successful():
+            raise RuntimeError(
+                f"Error consultando saldo: {response.result}"
+            )
+
+        balance_drops = int(
+            response.result["account_data"]["Balance"]
+        )
+
+        return balance_drops / 1_000_000
 
 
 if __name__ == "__main__":
