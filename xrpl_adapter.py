@@ -11,6 +11,26 @@ from xrpl.models.requests import AccountInfo
 
 class XRPLAdapter:
     def __init__(self):
+        load_dotenv()
+
+        self.agent_a_seed = os.getenv("AGENT_A_SEED")
+        self.agent_a_address = os.getenv("AGENT_A_ADDRESS")
+
+        if not self.agent_a_seed:
+            raise RuntimeError("AGENT_A_SEED no configurada")
+
+        if not self.agent_a_address:
+            raise RuntimeError("AGENT_A_ADDRESS no configurada")
+
+        wallet = Wallet.from_seed(self.agent_a_seed)
+
+        if wallet.classic_address != self.agent_a_address:
+            raise RuntimeError(
+                "La seed de Agent A no corresponde a AGENT_A_ADDRESS"
+            )
+
+        self.wallet = wallet
+
         self.client = JsonRpcClient(
             "https://s.altnet.rippletest.net:51234"
         )
@@ -48,18 +68,24 @@ class XRPLAdapter:
         return balance_drops / 1_000_000
 
     def pay(self, amount, asset, destination):
-        print("Pago solicitado al XRPL Adapter")
-        print(f"Cantidad: {amount}")
-        print(f"Asset: {asset}")
-        print(f"Destino: {destination}")
-
         if asset != "XRP":
             raise ValueError(
                 "El XRPL Adapter actualmente solo soporta XRP"
             )
 
-        print("Preparacion de pago completada")
+        amount_drops = int(float(amount) * 1_000_000)
 
+        payment = Payment(
+            account=self.agent_a_address,
+            destination=destination,
+            amount=str(amount_drops),
+        )
+
+        print("Payment XRPL construido")
+        print(f"Cantidad: {amount} {asset}")
+        print(f"Destino: {destination}")
+
+        return payment
 
 if __name__ == "__main__":
     adapter = XRPLAdapter()
