@@ -29,11 +29,11 @@ class PaymentEngine:
         )
 
         return PaymentResult(
-            success=result["success"],
-            amount=request.amount,
-            asset=request.asset,
-            destination=request.destination,
-            tx_hash=result["tx_hash"],
-            ledger_index=result["ledger_index"],
-            delivered_amount=result["delivered_amount"],
+            success=result.success,
+            amount=result.amount,
+            asset=result.asset,
+            destination=result.destination,
+            tx_hash=result.tx_hash,
+            ledger_index=result.ledger_index,
+            delivered_amount=result.delivered_amount,
         )
