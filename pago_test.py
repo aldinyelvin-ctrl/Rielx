@@ -38,8 +38,35 @@ payment = Payment(
     amount="1000",
 )
 
-print("Pago preparado")
-print("Red: XRPL Testnet")
-print(f"Origen: {AGENT_A_ADDRESS}")
-print(f"Destino: {AGENT_B_ADDRESS}")
+print("========================================")
+print("RIELX — PAGO XRPL TESTNET")
+print("========================================")
+print()
+print(f"Origen:   {AGENT_A_ADDRESS}")
+print(f"Destino:  {AGENT_B_ADDRESS}")
 print("Cantidad: 0.001 XRP")
+print("Red:      XRPL Testnet")
+print()
+print("ATENCIÓN: esta operación firmará y enviará")
+print("una transacción a XRPL Testnet.")
+print()
+
+confirmacion = input("Escribe ENVIAR para continuar: ")
+
+if confirmacion != "ENVIAR":
+    print("Operación cancelada.")
+    raise SystemExit(0)
+
+print()
+print("Enviando transaccion...")
+
+response = submit_and_wait(
+    payment,
+    client,
+    wallet_a,
+)
+
+print()
+print("Transaccion enviada.")
+print(f"Resultado: {response.result.get('meta', {}).get('TransactionResult')}")
+print(f"TX Hash: {response.result.get('hash')}")
