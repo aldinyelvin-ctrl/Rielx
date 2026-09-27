@@ -11,6 +11,9 @@ class PaymentEngine:
         return self.adapter.get_balance(address)
 
     def pay(self, amount, asset, destination):
+        if amount <= 0:
+            raise ValueError("El monto debe ser mayor que cero")
+
         return self.adapter.pay(
             amount=amount,
             asset=asset,
