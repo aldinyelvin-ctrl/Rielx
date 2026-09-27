@@ -73,7 +73,7 @@ class XRPLAdapter(PaymentAdapter):
                 "El XRPL Adapter actualmente solo soporta XRP"
             )
 
-        amount_drops = int(float(amount) * 1_000_000)
+        amount_drops = int(Decimal(str(amount)) * 1_000_000)
 
         payment = Payment(
             account=self.agent_a_address,
