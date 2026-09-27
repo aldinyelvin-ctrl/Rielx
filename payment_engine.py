@@ -8,6 +8,13 @@ class PaymentEngine:
     def get_balance(self, address):
         return self.adapter.get_balance(address)
 
+    def pay(self, amount, asset, destination):
+        return self.adapter.pay(
+            amount=amount,
+            asset=asset,
+            destination=destination,
+        )
+
         print("Rielx Payment Engine iniciado")
 
 

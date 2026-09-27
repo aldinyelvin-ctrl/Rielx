@@ -41,6 +41,19 @@ class XRPLAdapter:
 
         return balance_drops / 1_000_000
 
+    def pay(self, amount, asset, destination):
+        print("Pago solicitado al XRPL Adapter")
+        print(f"Cantidad: {amount}")
+        print(f"Asset: {asset}")
+        print(f"Destino: {destination}")
+
+        if asset != "XRP":
+            raise ValueError(
+                "El XRPL Adapter actualmente solo soporta XRP"
+            )
+
+        print("Preparacion de pago completada")
+
 
 if __name__ == "__main__":
     adapter = XRPLAdapter()
