@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from decimal import Decimal
 
 
 @dataclass
 class PaymentRequest:
-    amount: float
+    amount: Decimal
     asset: str
     destination: str
 
@@ -11,7 +12,7 @@ class PaymentRequest:
 @dataclass
 class PaymentResult:
     success: bool
-    amount: float
+    amount: Decimal
     asset: str
     destination: str
     tx_hash: str
