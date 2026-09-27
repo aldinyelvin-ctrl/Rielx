@@ -1,7 +1,5 @@
 from payment_adapter import PaymentAdapter
 from payment_models import PaymentRequest, PaymentResult
-from xrpl.core.addresscodec import is_valid_classic_address
-
 
 class PaymentEngine:
     def __init__(self, adapter: PaymentAdapter):
@@ -19,8 +17,7 @@ class PaymentEngine:
         if request.asset != "XRP":
             raise ValueError("Asset no soportado por el Payment Engine")
 
-        if not is_valid_classic_address(request.destination):
-            raise ValueError("Destination no es una dirección XRPL válida")
+        self.adapter.validate_destination(request.destination)
 
         result = self.adapter.pay(
             amount=request.amount,

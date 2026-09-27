@@ -8,5 +8,9 @@ class PaymentAdapter(ABC):
         pass
 
     @abstractmethod
+    def validate_destination(self, destination):
+        pass
+
+    @abstractmethod
     def pay(self, amount, asset, destination):
         pass

@@ -10,6 +10,7 @@ from xrpl.wallet import Wallet
 from xrpl.clients import JsonRpcClient
 from xrpl.models.requests import ServerInfo
 from xrpl.models.requests import AccountInfo
+from xrpl.core.addresscodec import is_valid_classic_address
 
 class XRPLAdapter(PaymentAdapter):
     def __init__(self):
@@ -49,6 +50,12 @@ class XRPLAdapter(PaymentAdapter):
         print("Error de conexion XRPL")
         print(response.result)
         return False
+
+    def validate_destination(self, destination):
+        if not is_valid_classic_address(destination):
+            raise ValueError(
+                "Destination no es una dirección XRPL válida"
+            )
 
     def get_balance(self, address):
         request = AccountInfo(
