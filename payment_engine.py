@@ -14,8 +14,7 @@ class PaymentEngine:
         if request.amount <= 0:
             raise ValueError("El monto debe ser mayor que cero")
 
-        if request.asset != "XRP":
-            raise ValueError("Asset no soportado por el Payment Engine")
+        self.adapter.validate_asset(request.asset)
 
         self.adapter.validate_destination(request.destination)
 

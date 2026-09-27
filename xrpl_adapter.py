@@ -51,6 +51,12 @@ class XRPLAdapter(PaymentAdapter):
         print(response.result)
         return False
 
+    def validate_asset(self, asset):
+        if asset != "XRP":
+            raise ValueError(
+                "El XRPL Adapter actualmente solo soporta XRP"
+            )
+
     def validate_destination(self, destination):
         if not is_valid_classic_address(destination):
             raise ValueError(
