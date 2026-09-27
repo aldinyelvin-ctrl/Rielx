@@ -16,5 +16,5 @@ class PaymentAdapter(ABC):
         pass
 
     @abstractmethod
-    def pay(self, amount, asset, destination):
+    def pay(self, request):
         pass

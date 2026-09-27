@@ -18,11 +18,7 @@ class PaymentEngine:
 
         self.adapter.validate_destination(request.destination)
 
-        result = self.adapter.pay(
-            amount=request.amount,
-            asset=request.asset,
-            destination=request.destination,
-        )
+        result = self.adapter.pay(request)
 
         return PaymentResult(
             success=result.success,

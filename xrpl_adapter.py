@@ -82,17 +82,14 @@ class XRPLAdapter(PaymentAdapter):
 
         return balance_drops / 1_000_000
 
-    def pay(self, amount, asset, destination):
-        if asset != "XRP":
-            raise ValueError(
-                "El XRPL Adapter actualmente solo soporta XRP"
-            )
-
-        amount_drops = int(Decimal(str(amount)) * 1_000_000)
+    def pay(self, request):
+        amount_drops = int(
+            Decimal(str(request.amount)) * 1_000_000
+        )
 
         payment = Payment(
             account=self.agent_a_address,
-            destination=destination,
+            destination=request.destination,
             amount=str(amount_drops),
         )
 
@@ -113,9 +110,9 @@ class XRPLAdapter(PaymentAdapter):
 
         return PaymentResult(
             success=result.is_successful(),
-            amount=amount,
-            asset=asset,
-            destination=destination,
+            amount=request.amount,
+            asset=request.asset,
+            destination=request.destination,
             tx_hash=result.result["hash"],
             ledger_index=result.result["ledger_index"],
             delivered_amount=result.result["meta"]["delivered_amount"],
