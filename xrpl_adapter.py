@@ -80,7 +80,7 @@ class XRPLAdapter(PaymentAdapter):
             response.result["account_data"]["Balance"]
         )
 
-        return balance_drops / 1_000_000
+        return Decimal(balance_drops) / Decimal("1000000")
 
     def pay(self, request):
         amount_drops = int(
