@@ -14,12 +14,9 @@ class PaymentEngine:
 
     def get_balance(self, request: BalanceRequest) -> BalanceResult:
         return BalanceResult(
-            amount=self.adapter.get_balance(
-                request.address,
-                request.asset,
-            ),
+            amount=self.adapter.get_balance(request),
             asset=request.asset,
-    )
+        )
 
     def pay(self, request: PaymentRequest) -> PaymentResult:
         if request.amount <= 0:
