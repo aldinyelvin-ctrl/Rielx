@@ -28,12 +28,3 @@ class PaymentResult:
     ledger_index: int
     delivered_amount: str
 
-@dataclass
-class PaymentResult:
-    success: bool
-    amount: Decimal
-    asset: str
-    destination: str
-    tx_hash: str
-    ledger_index: int
-    delivered_amount: str
