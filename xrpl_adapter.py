@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from dotenv import load_dotenv
 from payment_adapter import PaymentAdapter
-from payment_models import PaymentResult
+from payment_models import Asset, PaymentResult
 from xrpl.models import Payment
 from xrpl.transaction import submit_and_wait, autofill_and_sign
 from xrpl.wallet import Wallet
@@ -52,9 +52,14 @@ class XRPLAdapter(PaymentAdapter):
         return False
 
     def validate_asset(self, asset):
-        if asset != "XRP":
+        if asset.currency != "XRP":
             raise ValueError(
                 "El XRPL Adapter actualmente solo soporta XRP"
+            )
+
+        if asset.issuer is not None:
+            raise ValueError(
+                "XRP no debe tener issuer"
             )
 
     def validate_destination(self, destination):
