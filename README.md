@@ -1,62 +1,124 @@
-﻿# Rielx
+# Rielx
 
-Infraestructura experimental para pagos agenticos sobre XRPL.
+Infraestructura experimental para pagos agénticos sobre **XRPL Testnet**.
+No está preparada para fondos reales.
 
 ## Estado actual
 
-Rielx se encuentra en fase de prototipo sobre **XRPL Testnet**.
+Rielx permite actualmente:
 
-Actualmente podemos:
+- Crear wallets de prueba para Agent A y Agent B, y guardar sus credenciales en
+  `.env`, excluido de Git.
+- Consultar saldos XRP y saldos de activos emitidos (issued currencies).
+- Modelar XRP y activos emitidos con su issuer.
+- Preparar y enviar pagos XRP o emitidos desde Agent A, pero sólo después de
+  pasar `confirm=True` explícitamente.
+- Consultar si una cuenta mantiene una trust line para un activo y abrir una
+  trust line desde el firmante explícito de Agent A o Agent B, sólo con
+  confirmación explícita.
+- Verificar un pago ya validado en el ledger sin una seed: exige `tesSUCCESS`,
+  destino, origen opcional, activo, importe y entrega exactos; también rechaza
+  pagos parciales.
+- Exponer una base de recurso de Agent B que responde HTTP 402 y acepta un hash
+  en `X-Rielx-Payment` sólo una vez tras verificarlo en Testnet.
 
-- Crear wallets para Agent A y Agent B.
-- Guardar las credenciales de forma segura en `.env`.
-- Verificar que las seeds corresponden a sus addresses.
-- Consultar los saldos desde Python.
-- Preparar pagos XRP.
-- Firmar y enviar pagos desde Agent A.
-- Verificar posteriormente el resultado en el ledger.
+El adapter usa exclusivamente `https://s.altnet.rippletest.net:51234` y aborta
+si `XRPL_NETWORK` no es exactamente `testnet`.
 
-## Primer pago exitoso
+## Activos emitidos y RLUSD de prueba
 
-El primer pago de prueba de Rielx fue realizado en XRPL Testnet.
+Un activo emitido necesita el issuer de **Testnet** correspondiente. No se
+incluye ni se presupone un issuer de RLUSD en este repositorio.
 
-**Origen**
+```python
+from decimal import Decimal
 
-Agent A
+from payment_models import Asset, PaymentRequest, TrustLineRequest
 
-**Destino**
+rlusd = Asset("RLUSD", issuer="<ISSUER_DE_TESTNET>")
+```
 
-Agent B
+XRPL no admite `RLUSD` directamente como código corto de moneda. Rielx acepta
+ese alias legible y lo traduce a
+`524C555344000000000000000000000000000000`, la representación XRPL de 160
+bits. Los códigos de tres caracteres (por ejemplo, `USD`) se usan tal cual.
 
-**Cantidad**
+Antes de recibir un activo emitido, la cuenta receptora necesita una trust
+line. Para un pago Agent A → Agent B, se abre desde el signer de Agent B. La
+siguiente operación **sí envía una transacción de Testnet**, por lo que sólo se
+debe ejecutar tras revisar issuer, límite y cuenta receptora:
 
-`0.001 XRP`
+```python
+from payment_engine import PaymentEngine
+from xrpl_adapter import XRPLAdapter
 
-**Resultado XRPL**
+agent_b_engine = PaymentEngine(XRPLAdapter(signer_account="agent_b"))
+agent_b_engine.open_trust_line(
+    TrustLineRequest(asset=rlusd, limit=Decimal("100")),
+    confirm=True,
+)
+```
 
-`tesSUCCESS`
+El pago se firma desde Agent A:
 
-**TX Hash**
+```python
+agent_a_engine = PaymentEngine(XRPLAdapter(signer_account="agent_a"))
+agent_a_engine.pay(
+    PaymentRequest(
+        amount=Decimal("2.5"),
+        asset=rlusd,
+        destination="<AGENT_B_ADDRESS>",
+    ),
+    confirm=True,
+)
+```
 
-`83B48E5BF4D61832D78A2524995186CFB30DB07F2FA7784E6C494FC4C813758B`
+Si se omite `confirm=True`, Rielx corta la operación antes de firmar o enviar.
 
-### Saldos verificados despues del pago
+## Verificación y base Agent A ↔ Agent B
 
-| Cuenta | Saldo |
-|---|---:|
-| Agent A | 99.99899 XRP |
-| Agent B | 100.001 XRP |
+Agent B puede usar el adapter en modo de sólo lectura, sin `AGENT_A_SEED`:
 
-La diferencia adicional de Agent A corresponde al coste de la transaccion.
+```python
+from decimal import Decimal
+
+from agent_b_api import create_agent_b_app
+from payment_engine import PaymentEngine
+from payment_models import Asset, PaymentRequest
+from xrpl_adapter import XRPLAdapter
+
+verifier = PaymentEngine(XRPLAdapter(require_signer=False))
+app = create_agent_b_app(
+    verifier,
+    PaymentRequest(
+        amount=Decimal("2.5"),
+        asset=Asset("RLUSD", issuer="<ISSUER_DE_TESTNET>"),
+        destination="<AGENT_B_ADDRESS>",
+    ),
+    expected_source="<AGENT_A_ADDRESS>",
+)
+```
+
+`GET /resource` devuelve HTTP 402 con los términos de pago si falta el header.
+Agent A paga fuera de la petición y reintenta incluyendo
+`X-Rielx-Payment: <TX_HASH>`. Si la transacción está validada y coincide de
+forma exacta, el recurso responde 200. Un hash ya consumido recibe 409. La
+protección antirrepetición actual es intencionalmente local al proceso; un
+despliegue de varias instancias requiere una reserva atómica persistente.
+
+## Pruebas locales
+
+Las pruebas no contactan Testnet y no firman ni envían transacciones:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
 
 ## Seguridad
 
-- XRPL Testnet unicamente.
-- Las seeds no se almacenan en el codigo.
-- `.env` esta excluido de Git.
-- Las transacciones requieren confirmacion explicita antes de enviarse.
-- No utilizar estas credenciales ni este codigo experimental con fondos reales sin implementar las verificaciones de seguridad necesarias.
-
-## Proximo objetivo
-
-Convertir el flujo de pago de prueba en un componente reutilizable del motor de pagos de Rielx.
+- Sólo XRPL Testnet; no usar con fondos reales.
+- Las seeds no se almacenan en el código ni se añaden a Git.
+- Los importes son `Decimal`; no se aceptan floats implícitos.
+- XRP debe corresponder a un número entero de drops.
+- Un pago emitido sólo se acepta para Agent B cuando el ledger confirma la
+  entrega exacta y no contiene la bandera de pago parcial.
