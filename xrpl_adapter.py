@@ -7,6 +7,8 @@ from payment_adapter import PaymentAdapter
 from payment_models import (
     Asset,
     BalanceRequest,
+    DefaultRippleRequest,
+    DefaultRippleResult,
     PaymentRequest,
     PaymentResult,
     PaymentVerificationRequest,
@@ -16,9 +18,10 @@ from payment_models import (
 )
 from xrpl.clients import JsonRpcClient
 from xrpl.core.addresscodec import is_valid_classic_address
-from xrpl.models import IssuedCurrency, Payment, TrustSet
+from xrpl.models import AccountSet, IssuedCurrency, Payment, TrustSet
 from xrpl.models.amounts import IssuedCurrencyAmount
 from xrpl.models.requests import AccountInfo, AccountLines, ServerInfo, Tx
+from xrpl.models.transactions.account_set import AccountSetAsfFlag
 from xrpl.transaction import autofill_and_sign, submit_and_wait
 from xrpl.wallet import Wallet
 
@@ -49,8 +52,10 @@ class XRPLAdapter(PaymentAdapter):
             raise RuntimeError(
                 "Por seguridad, XRPLAdapter sólo puede ejecutarse en Testnet"
             )
-        if signer_account not in {"agent_a", "agent_b"}:
-            raise ValueError("signer_account debe ser 'agent_a' o 'agent_b'")
+        if signer_account not in {"agent_a", "agent_b", "issuer"}:
+            raise ValueError(
+                "signer_account debe ser 'agent_a', 'agent_b' o 'issuer'"
+            )
 
         self.client = client or JsonRpcClient(TESTNET_URL)
         self.agent_a_address = os.getenv("AGENT_A_ADDRESS")
@@ -183,6 +188,13 @@ class XRPLAdapter(PaymentAdapter):
                 "Este adapter es de sólo lectura; no tiene un signer configurado"
             )
 
+    def _require_issuer_signer(self) -> None:
+        self._require_signer()
+        if self.signer_account != "issuer":
+            raise RuntimeError(
+                "DefaultRipple sólo puede configurarse con signer_account='issuer'"
+            )
+
     def open_trust_line(
         self, request: TrustLineRequest, *, confirm: bool
     ) -> TrustLineResult:
@@ -208,6 +220,35 @@ class XRPLAdapter(PaymentAdapter):
             success=transaction_result == "tesSUCCESS",
             asset=request.asset,
             limit=request.limit,
+            tx_hash=result["hash"],
+            ledger_index=self._ledger_index(result),
+            transaction_result=transaction_result,
+        )
+
+    def configure_default_ripple(
+        self, request: DefaultRippleRequest, *, confirm: bool
+    ) -> DefaultRippleResult:
+        if not isinstance(request, DefaultRippleRequest):
+            raise TypeError("request debe ser una instancia de DefaultRippleRequest")
+        if not confirm:
+            raise PermissionError(
+                "Configurar DefaultRipple requiere confirm=True explícito"
+            )
+        self._require_issuer_signer()
+
+        flag = AccountSetAsfFlag.ASF_DEFAULT_RIPPLE
+        account_set = AccountSet(
+            account=self.signer_address,
+            set_flag=flag if request.enabled else None,
+            clear_flag=None if request.enabled else flag,
+        )
+        signed = autofill_and_sign(account_set, self.client, self.wallet)
+        response = submit_and_wait(signed, self.client)
+        result = response.result
+        transaction_result = self._transaction_result(result)
+        return DefaultRippleResult(
+            success=transaction_result == "tesSUCCESS",
+            enabled=request.enabled,
             tx_hash=result["hash"],
             ledger_index=self._ledger_index(result),
             transaction_result=transaction_result,
@@ -326,17 +367,19 @@ class XRPLAdapter(PaymentAdapter):
             return rejected("La transacción aún no está validada")
         if result.get("hash", request.tx_hash).upper() != request.tx_hash.upper():
             return rejected("El hash devuelto no coincide con el pago solicitado")
-        if result.get("TransactionType") != "Payment":
+        tx_json = result.get("tx_json") or {}
+        if tx_json.get("TransactionType") != "Payment":
             return rejected("La transacción no es un Payment")
         if transaction_result != "tesSUCCESS":
             return rejected(f"El pago no fue exitoso: {transaction_result}")
-        if int(result.get("Flags", 0)) & _PARTIAL_PAYMENT_FLAG:
+        if int(tx_json.get("Flags", 0)) & _PARTIAL_PAYMENT_FLAG:
             return rejected("No se aceptan pagos parciales")
-        if result.get("Destination") != request.destination:
+        if tx_json.get("Destination") != request.destination:
             return rejected("El destino no coincide con el pago esperado")
-        if request.source is not None and result.get("Account") != request.source:
+        if request.source is not None and tx_json.get("Account") != request.source:
             return rejected("El origen no coincide con el pagador esperado")
-        if not self._amount_matches(result.get("Amount"), request.asset, request.amount):
+        payment_amount = tx_json.get("Amount", tx_json.get("DeliverMax"))
+        if not self._amount_matches(payment_amount, request.asset, request.amount):
             return rejected("El importe o activo no coincide con el pago esperado")
         if delivered_amount != request.amount:
             return rejected("El ledger no confirmó la entrega exacta esperada")

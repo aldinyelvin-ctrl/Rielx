@@ -108,6 +108,26 @@ class TrustLineResult:
 
 
 @dataclass(frozen=True)
+class DefaultRippleRequest:
+    """Cambio solicitado para la bandera DefaultRipple del issuer."""
+
+    enabled: bool = True
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.enabled, bool):
+            raise TypeError("enabled debe ser bool")
+
+
+@dataclass(frozen=True)
+class DefaultRippleResult:
+    success: bool
+    enabled: bool
+    tx_hash: str
+    ledger_index: int | None
+    transaction_result: str
+
+
+@dataclass(frozen=True)
 class PaymentResult:
     success: bool
     amount: Decimal

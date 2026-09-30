@@ -6,6 +6,8 @@ from payment_engine import PaymentEngine
 from payment_models import (
     Asset,
     BalanceRequest,
+    DefaultRippleRequest,
+    DefaultRippleResult,
     PaymentRequest,
     PaymentResult,
     PaymentVerificationRequest,
@@ -23,6 +25,7 @@ class RecordingAdapter(PaymentAdapter):
     def __init__(self):
         self.pay_calls = []
         self.trust_line_calls = []
+        self.default_ripple_calls = []
 
     def get_balance(self, request):
         return Decimal("7.5")
@@ -45,6 +48,16 @@ class RecordingAdapter(PaymentAdapter):
             asset=request.asset,
             limit=request.limit,
             tx_hash="A" * 64,
+            ledger_index=12,
+            transaction_result="tesSUCCESS",
+        )
+
+    def configure_default_ripple(self, request, *, confirm):
+        self.default_ripple_calls.append((request, confirm))
+        return DefaultRippleResult(
+            success=True,
+            enabled=request.enabled,
+            tx_hash="D" * 64,
             ledger_index=12,
             transaction_result="tesSUCCESS",
         )
@@ -124,6 +137,19 @@ class PaymentEngineTests(unittest.TestCase):
                 TrustLineRequest(self.rlusd, Decimal("1"))
             )
         self.assertEqual(self.adapter.trust_line_calls, [])
+
+    def test_default_ripple_requires_explicit_confirmation(self):
+        request = DefaultRippleRequest()
+        with self.assertRaises(PermissionError):
+            self.engine.configure_default_ripple(request)
+        self.assertEqual(self.adapter.default_ripple_calls, [])
+
+    def test_confirmed_default_ripple_is_delegated(self):
+        request = DefaultRippleRequest(enabled=False)
+        result = self.engine.configure_default_ripple(request, confirm=True)
+        self.assertTrue(result.success)
+        self.assertFalse(result.enabled)
+        self.assertEqual(self.adapter.default_ripple_calls, [(request, True)])
 
     def test_verification_is_delegated_without_a_signing_action(self):
         request = PaymentVerificationRequest(

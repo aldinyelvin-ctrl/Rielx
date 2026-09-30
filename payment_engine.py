@@ -5,6 +5,8 @@ from payment_models import (
     Asset,
     BalanceRequest,
     BalanceResult,
+    DefaultRippleRequest,
+    DefaultRippleResult,
     PaymentRequest,
     PaymentResult,
     PaymentVerificationRequest,
@@ -54,6 +56,17 @@ class PaymentEngine:
                 "Abrir una trust line requiere confirm=True explícito"
             )
         return self.adapter.open_trust_line(request, confirm=confirm)
+
+    def configure_default_ripple(
+        self, request: DefaultRippleRequest, *, confirm: bool = False
+    ) -> DefaultRippleResult:
+        if not isinstance(request, DefaultRippleRequest):
+            raise TypeError("request debe ser una instancia de DefaultRippleRequest")
+        if not confirm:
+            raise PermissionError(
+                "Configurar DefaultRipple requiere confirm=True explícito"
+            )
+        return self.adapter.configure_default_ripple(request, confirm=confirm)
 
     def pay(
         self, request: PaymentRequest, *, confirm: bool = False

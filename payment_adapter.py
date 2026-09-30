@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from payment_models import (
     Asset,
     BalanceRequest,
+    DefaultRippleRequest,
+    DefaultRippleResult,
     PaymentRequest,
     PaymentResult,
     PaymentVerificationRequest,
@@ -33,6 +35,12 @@ class PaymentAdapter(ABC):
     def open_trust_line(
         self, request: TrustLineRequest, *, confirm: bool
     ) -> TrustLineResult:
+        pass
+
+    @abstractmethod
+    def configure_default_ripple(
+        self, request: DefaultRippleRequest, *, confirm: bool
+    ) -> DefaultRippleResult:
         pass
 
     @abstractmethod
